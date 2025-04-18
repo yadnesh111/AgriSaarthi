@@ -1,5 +1,4 @@
 fastapi
 uvicorn
-langchain
-openai
 python-dotenv
+huggingface_hub

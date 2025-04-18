@@ -1,11 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_bot import get_chat_response
 from pydantic import BaseModel
+from .langchain_bot_mistral import get_chat_response
 
 app = FastAPI()
 
-# Allow frontend to call this API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +15,7 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     query: str
-    history: list[str] = []
+    history: list
 
 @app.post("/chat")
 async def chat(req: ChatRequest):
