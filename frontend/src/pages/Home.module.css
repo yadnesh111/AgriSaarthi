@@ -1,0 +1,13 @@
+.backgroundImage {
+  background-image: url("../assets/bg.png");
+  background-repeat: no-repeat;
+  background-position: center center; /* Center the image */
+  background-size: cover; /* Ensure the image covers the entire area */
+  opacity: 0.2;
+  position: fixed; /* Fix it in place */
+  top: 0;
+  left: 0;
+  width: 100%; /* Make the width 100% of the viewport */
+  height: 100%; /* Make the height 100% of the viewport */
+  z-index: -1; /* Ensure it's behind other content */
+}

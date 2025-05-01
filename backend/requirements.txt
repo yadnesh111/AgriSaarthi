@@ -1,4 +1,11 @@
+
 fastapi
 uvicorn
 python-dotenv
+requests
+pandas
+numpy
+scikit-learn
+inference
+python-multipart
 huggingface_hub
