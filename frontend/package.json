@@ -27,6 +27,7 @@
     "remark-gfm": "^4.0.1"
   },
   "scripts": {
+    "prebuild": "chmod +x ./node_modules/.bin/react-scripts",
     "start": "react-scripts start",
     "build": "react-scripts build"
   },
