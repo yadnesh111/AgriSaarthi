@@ -294,7 +294,10 @@ const MandiRates = () => {
           </table>
         </div>
       ) : (
-        <div className="text-center text-muted">No data available.</div>
+        <div className="text-center text-muted">
+          Market data is currently unavailable as APMC markets have not updated
+          today's rates. Please check again after 11:00 AM.
+        </div>
       )}
       {/* Trend Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">

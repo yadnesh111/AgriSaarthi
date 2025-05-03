@@ -170,7 +170,7 @@ const Home = () => {
                 to="/fertilizer-advice"
                 className="btn btn-warning text-white shadow"
               >
-                🌱 {t.fertilizer}
+                💊 {t.fertilizer}
               </Link>
               {/* ✅ NEW KRISHI CALENDAR BUTTON */}
               <Link to="/krishi-calendar" className="btn btn-info shadow">
