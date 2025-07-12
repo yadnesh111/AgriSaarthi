@@ -10,7 +10,7 @@ export default function Reels() {
   useEffect(() => {
     const fetchReels = async () => {
       try {
-        const response = await axios.get("https://agrisaarthibackend.onrender.com/reels",
+        const response = await axios.get("https://agrisaarthibackend.onrender.com/reels");
         setReels(response.data.reels || []);
       } catch (error) {
         console.error("Error fetching reels:", error);
