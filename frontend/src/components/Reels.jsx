@@ -36,10 +36,10 @@ export default function Reels() {
               title={video.title}
               frameBorder="0"
               allow="autoplay; fullscreen"
-              allowFullScreen
-              muted
-              loop
-            ></iframe>
+              allowFullScreen={true}
+              muted={true}
+              loop={true}
+            />
             <div className="reel-caption">
               <h3>{video.title}</h3>
             </div>
