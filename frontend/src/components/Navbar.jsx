@@ -13,11 +13,13 @@ import { LanguageContext } from "./LanguageContext";
 import { PriceAlertContext } from "./PriceAlertContext";
 import logo from "../assets/logo.png";
 import { toast } from "react-toastify";
+import Reels from "./Reels"; // Import Reels component
 
 const Navbar = () => {
   const { t } = useContext(LanguageContext);
   const { priceAlerts } = useContext(PriceAlertContext);
   const [isOpen, setIsOpen] = useState(false);
+  const [showReels, setShowReels] = useState(false);
 
   const menuItems = [
     { label: t.home, path: "/", icon: <Home size={18} /> },
@@ -34,6 +36,16 @@ const Navbar = () => {
         ></i>
       ),
     },
+    {
+      label: t.news || "News",
+      path: "/news",
+      icon: (
+        <i
+          className="bi bi-newspaper text-white"
+          style={{ fontSize: "18px" }}
+        ></i>
+      ),
+    },
   ];
 
   const handleBellClick = () => {
@@ -42,6 +54,10 @@ const Navbar = () => {
     } else {
       toast.info("🔔 No active alerts yet!");
     }
+  };
+
+  const toggleReels = () => {
+    setShowReels(!showReels);
   };
 
   useEffect(() => {
@@ -83,7 +99,10 @@ const Navbar = () => {
         <div
           className="position-fixed top-0 start-0 w-100 h-100"
           style={{ background: "rgba(0,0,0,0.5)", zIndex: 1040 }}
-          onClick={() => setIsOpen(false)}
+          onClick={() => {
+            setIsOpen(false);
+            setShowReels(false); // Close reels if drawer closes
+          }}
         />
       )}
 
@@ -96,6 +115,7 @@ const Navbar = () => {
           zIndex: 1050,
           transform: isOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.3s ease-in-out",
+          overflowY: "auto",
         }}
       >
         <div>
@@ -103,7 +123,10 @@ const Navbar = () => {
             <h5 className="m-0">Menu</h5>
             <button
               className="btn btn-light btn-sm"
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                setShowReels(false);
+              }}
             >
               <X size={18} />
             </button>
@@ -122,6 +145,16 @@ const Navbar = () => {
                 </Link>
               </li>
             ))}
+
+            {/* Farming Reels toggle button */}
+            <li className="nav-item">
+              <button
+                className="btn btn-light w-100 text-start"
+                onClick={toggleReels}
+              >
+                🎥 Farming Reels
+              </button>
+            </li>
           </ul>
         </div>
 
@@ -129,6 +162,39 @@ const Navbar = () => {
           © {new Date().getFullYear()} AgriSaarthi
         </div>
       </div>
+
+      {/* Reels Panel */}
+      {showReels && (
+        <div
+          style={{
+            position: "fixed",
+            top: "60px",
+            left: "250px",
+            right: 0,
+            bottom: 0,
+            backgroundColor: "white",
+            zIndex: 1100,
+            overflowY: "auto",
+            padding: "10px",
+          }}
+        >
+          <button
+            onClick={toggleReels}
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              padding: "5px 10px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              zIndex: 1200,
+            }}
+          >
+            Close
+          </button>
+          <Reels />
+        </div>
+      )}
     </>
   );
 };

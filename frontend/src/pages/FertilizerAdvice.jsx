@@ -24,7 +24,7 @@ const FertilizerAdvice = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        "https://agrisaarthibackend.onrender.com/fertilizer-advice",
+        "https://agrisaarthibackend.onrender.com/fertilizer-advice", //https://agrisaarthibackend.onrender.com/fertilizer-advice
         {
           ...formData,
           language,

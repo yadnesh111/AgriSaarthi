@@ -1,0 +1,16 @@
+.event-rain {
+  background-color: #cce5ff !important;
+  color: black !important;
+}
+.event-green {
+  background-color: #d4edda !important;
+  color: black !important;
+}
+.event-red {
+  background-color: #ffcccc !important;
+  color: black !important;
+}
+.event-default {
+  background-color: #f0f0f0 !important;
+  color: black !important;
+}

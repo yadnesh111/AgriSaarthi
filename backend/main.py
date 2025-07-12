@@ -14,6 +14,9 @@ import numpy as np
 from dotenv import load_dotenv
 from inference_sdk import InferenceHTTPClient
 from mandi_rates import fetch_mandi_data
+import feedparser
+from datetime import datetime, timedelta
+import re
 
 from sklearn.linear_model import LinearRegression
 from datetime import datetime, timedelta
@@ -46,6 +49,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+async def root():
+    return {"message": "✅ AgriSaarthi backend is up and running!"}
 
 @app.post("/diagnose")
 async def diagnose_crop(
@@ -103,13 +110,13 @@ async def diagnose_crop(
 
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "HTTP-Referer": "http://localhost:3000",
+            "HTTP-Referer": "https://agrisaarthi.vercel.app",
             "X-Title": "AgriSaarthi-Diagnosis",
             "Content-Type": "application/json"
         }
 
         data = {
-            "model": "openai/gpt-3.5-turbo",
+            "model": "anthropic/claude-3-haiku",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
             "max_tokens": 1200
@@ -126,7 +133,7 @@ async def diagnose_crop(
                 f"Diagnosis: {crop_disease}\n\nRemedy:\n{remedy}"
             )
             translation_data = {
-                "model": "openai/gpt-3.5-turbo",
+                "model": "anthropic/claude-3-haiku",
                 "messages": [{"role": "user", "content": translate_prompt}],
                 "temperature": 0.5
             }
@@ -174,18 +181,20 @@ async def krishigpt_chat(request: Request):
 
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "HTTP-Referer": "http://localhost:3000",
+            "HTTP-Referer": "https://agrisaarthi.vercel.app",
             "X-Title": "AgriSaarthi-KrishiGPT",
             "Content-Type": "application/json"
         }
 
         data = {
-            "model": "openai/gpt-3.5-turbo",
+            "model": "anthropic/claude-3-haiku",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7
         }
 
         res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
+        print("Status code:", res.status_code)
+        print("Response text:", res.text)
         res.raise_for_status()
 
         reply = res.json()["choices"][0]["message"]["content"]
@@ -289,7 +298,7 @@ async def fertilizer_advice(request: Request):
         }
 
         data = {
-            "model": "openai/gpt-3.5-turbo",
+            "model": "meta-llama/llama-3-8b-instruct",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7
         }
@@ -306,7 +315,7 @@ async def fertilizer_advice(request: Request):
                 f"Translate this agricultural advice into {'Hindi' if language == 'hi' else 'Marathi'}:\n\n{english_output}"
             )
             translation_data = {
-                "model": "openai/gpt-3.5-turbo",
+                "model": "anthropic/claude-3-haiku",
                 "messages": [{"role": "user", "content": translate_prompt}],
                 "temperature": 0.5
             }
@@ -324,9 +333,14 @@ async def fertilizer_advice(request: Request):
         return JSONResponse(status_code=500, content={"error": str(e)})
 # Add this at the very end of your existing main.py
 
+...
+
 @app.post("/generate-calendar")
 async def generate_calendar(request: Request):
     try:
+        from datetime import datetime
+        import traceback
+
         body = await request.json()
         crop = body.get("crop")
         sowingDate = body.get("sowingDate")
@@ -335,70 +349,159 @@ async def generate_calendar(request: Request):
         location = body.get("location")
         language = body.get("language", "en")
 
-        if not crop or not sowingDate or not soilType or not farmSize or not location:
-            return {"error": "Missing inputs."}
-
-        prompt = (
-    f"You are an agricultural expert helping a farmer. Generate a farming schedule for the following crop: {crop}. "
-    f"Sowing Date: {sowingDate}, Soil Type: {soilType}, Farm Size: {farmSize} acre(s), Location: {location}. "
-    f"Schedule should include watering, fertilizer application, pest control, weed management, and harvest prediction. "
-    f"👉 Important: Always keep dates in English format like 'May 1, 2025' even if the description is in Hindi/Marathi. "
-    f"👉 Now write the activity descriptions in {'Hindi' if language == 'hi' else 'Marathi' if language == 'mr' else 'English'} simple language for farmers. "
-    f"Each line must start with the Date, followed by the activity description."
-)
-
+        if not all([crop, sowingDate, soilType, farmSize, location]):
+            return JSONResponse(status_code=400, content={"error": "Missing inputs."})
 
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "HTTP-Referer": "https://agrisaarthi.vercel.app",  # change accordingly
             "Content-Type": "application/json"
         }
 
-        data = {
-            "model": os.getenv("OPENROUTER_MODEL"),  # 🛠️ fixed this line to use your .env
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.6
-        }
-
-        res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
-        res.raise_for_status()
-
-        reply = res.json()["choices"][0]["message"]["content"]
-
-        return {"calendar": reply.strip()}
-
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Calendar generation failed: {str(e)}"})
-@app.post("/upload-crop-photo")
-async def upload_crop_photo(image: UploadFile = File(...)):
-    try:
-        temp_filename = f"temp_{uuid.uuid4().hex}_{image.filename}"
-        with open(temp_filename, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-
-        prompt = (
-            f"You are an expert agricultural AI. "
-            f"Analyze the uploaded crop image and determine its growth stage. "
-            f"Answer in one word only: Early, Vegetative, Flowering, Fruiting, Harvest."
+        # Step 1: Predict total duration
+        duration_prompt = (
+            f"You are an agricultural AI expert. The crop is '{crop}', grown on {farmSize} acre(s) of {soilType} soil in {location}, "
+            f"sowing date is {sowingDate}. Predict total days from sowing to harvest for this crop. Reply only with a number like '95'."
         )
 
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
+        try:
+            duration_data = {
+                "model": "anthropic/claude-3-haiku",
+                "messages": [{"role": "user", "content": duration_prompt}],
+                "temperature": 0.4
+            }
+
+            duration_res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=duration_data)
+            duration_res.raise_for_status()
+            duration_json = duration_res.json()
+            print("Duration API response:", duration_json)
+            duration_text = duration_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            total_days = int("".join(filter(str.isdigit, duration_text))) or 100
+        except Exception as e:
+            print("⚠️ Claude Duration Error:", e)
+            traceback.print_exc()
+            total_days = 100  # fallback
+
+        # Step 2: Generate full calendar
+        full_schedule_prompt = (
+            f"You are an agricultural assistant helping a farmer generate a detailed {total_days}-day calendar for crop '{crop}'. "
+            f"The sowing date is {sowingDate}, soil type is {soilType}, farm size is {farmSize} acres, and location is {location}. "
+            f"Create a day-wise farming activity schedule (watering, fertilizing, pesticide, growth stages, harvesting, etc). "
+            f"Start from {sowingDate} for about {total_days} days. Use simple language in {'Marathi' if language=='mr' else 'Hindi' if language=='hi' else 'English'}. "
+            f"Start each line with a date like 'July 21, 2025: [activity]', no bullets."
+        )
+
+        ai_data = {
+            "model": "anthropic/claude-3-haiku",
+            "messages": [{"role": "user", "content": full_schedule_prompt}],
+            "temperature": 0.7
         }
 
-        data = {
-            "model": os.getenv("OPENROUTER_MODEL"),
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.5
-        }
+        try:
+            ai_res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=ai_data)
+            ai_res.raise_for_status()
+            ai_json = ai_res.json()
+            print("AI Calendar API response:", ai_json)
+            full_calendar_text = ai_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        except Exception as e:
+            print("⚠️ AI Calendar Generation Error:", e)
+            traceback.print_exc()
+            full_calendar_text = "Error generating calendar."
 
-        res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
-        res.raise_for_status()
-        reply = res.json()["choices"][0]["message"]["content"]
-
-        os.remove(temp_filename)
-
-        return {"growth_stage": reply.strip()}
+        print("✅ Full AI Calendar Generated:\n", full_calendar_text)
+        return {"calendar": full_calendar_text}
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Image analysis failed: {str(e)}"})
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": f"Calendar generation failed: {str(e)}"})
+
+
+
+
+AGRI_RSS_FEEDS = [
+    "https://agrifarming.in/feed",
+    "https://justagriculture.in/feed"
+]
+
+def get_ai_summary(prompt: str):
+    try:
+        res = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "anthropic/claude-3-haiku",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.6
+            }
+        )
+        res.raise_for_status()
+        return res.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print("AI summarization failed:", e)
+        return "⚠️ AI summary unavailable."
+
+@app.get("/news")
+def get_agriculture_news(district: Optional[str] = None):
+    cutoff = datetime.now() - timedelta(days=90)
+    articles = []
+
+    for url in AGRI_RSS_FEEDS:
+        feed = feedparser.parse(url)
+        count = 0
+        for entry in feed.entries:
+            if count >= 8:
+                break
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                pub = datetime(*entry.published_parsed[:6])
+                if pub < cutoff:
+                    continue
+            else:
+                continue
+
+            clean_summary = re.sub(r'<[^>]+>', '', entry.summary)
+            ai_summary = get_ai_summary(f"Summarize this agriculture article for Indian farmers:\n\n{clean_summary}")
+
+            articles.append({
+                "title": entry.title,
+                "summary": ai_summary.strip(),
+                "url": entry.link,
+                "published": pub.isoformat()
+            })
+            count += 1
+
+    # Add local news if district provided
+    if district:
+        local = get_ai_summary(f"Write a short 1-paragraph agriculture update or news for {district}, India. It could include weather, crop alerts, farmer schemes, etc.")
+        articles.insert(0, {
+            "title": f"📍 Trending in {district}",
+            "summary": local.strip(),
+            "url": "",
+            "published": datetime.now().isoformat()
+        })
+
+    return {"articles": articles}
+
+
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+@app.get("/reels")
+def get_reels():
+    url = (
+        f"https://www.googleapis.com/youtube/v3/search?part=snippet&q=agriculture+farming&type=video&videoDuration=short&maxResults=10&key={YOUTUBE_API_KEY}"
+    )
+    response = requests.get(url)
+    data = response.json()
+    reels = []
+
+    for item in data.get("items", []):
+        reels.append({
+            "title": item["snippet"]["title"],
+            "description": item["snippet"]["description"],
+            "thumbnail": item["snippet"]["thumbnails"]["high"]["url"],
+            "videoId": item["id"]["videoId"]
+        })
+
+    return {"reels": reels}

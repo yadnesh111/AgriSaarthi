@@ -12,6 +12,8 @@ import KrishiCalendar from "./pages/KrishiCalendar"; // ✅ Added new import
 import { ToastContainer } from "react-toastify"; // ✅ Toastify import
 import "react-toastify/dist/ReactToastify.css";
 import PriceAlertChecker from "./components/PriceAlertChecker"; // ✅ Import new
+import AgricultureNews from "./components/AgricultureNews";
+import Reels from "./components/Reels";
 
 function App() {
   return (
@@ -30,8 +32,10 @@ function App() {
           <Route path="/credit-score" element={<CreditScore />} />
           <Route path="/loan-info" element={<LoanInfo />} />
           <Route path="/fertilizer-advice" element={<FertilizerAdvice />} />
-          <Route path="/krishi-calendar" element={<KrishiCalendar />} />{" "}
-          {/* ✅ Added new route */}
+          <Route path="/krishi-calendar" element={<KrishiCalendar />} />
+
+          <Route path="/news" element={<AgricultureNews />} />
+          <Route path="/reels" element={<Reels />} />
         </Routes>
       </main>
 

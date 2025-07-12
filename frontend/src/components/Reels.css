@@ -1,0 +1,45 @@
+.reels-container {
+  height: 100vh;
+  width: 100vw;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.reel-item {
+  height: 100vh;
+  width: 100vw;
+  scroll-snap-align: start;
+  position: relative;
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.reel-video {
+  height: 100vh;
+  width: 100vw;
+  object-fit: cover;
+}
+
+.reel-caption {
+  position: absolute;
+  bottom: 50px;
+  left: 20px;
+  color: white;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  max-width: 90%;
+  font-size: 1.2rem;
+}
+
+.loading,
+.no-reels {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  color: gray;
+}
