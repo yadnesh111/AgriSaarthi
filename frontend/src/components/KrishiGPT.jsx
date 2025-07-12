@@ -21,7 +21,6 @@ const KrishiGPT = () => {
   } = useSpeechRecognition();
 
   const startMic = () => {
-    console.log("Mic button clicked");
     if (!browserSupportsSpeechRecognition) {
       alert("Speech recognition not supported");
       return;
@@ -39,14 +38,12 @@ const KrishiGPT = () => {
     });
 
     setTimeout(() => {
-      console.log("Auto stop after 10s");
       SpeechRecognition.stopListening();
       setIsListening(false);
     }, 10000);
   };
 
   const stopMic = () => {
-    console.log("Mic manually stopped");
     SpeechRecognition.stopListening();
     setIsListening(false);
   };
@@ -64,18 +61,20 @@ const KrishiGPT = () => {
 
   const sendMessage = async (inputText = message) => {
     if (!inputText.trim()) return;
-    console.log("📤 Sending message:", inputText);
     setMessages((prev) => [...prev, { role: "user", content: inputText }]);
 
     try {
-      const res = await fetch("https://agrisaarthibackend.onrender.com/krishigpt",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: inputText,
-          language: selectedLanguage,
-        }),
-      });
+      const res = await fetch(
+        "https://agrisaarthibackend.onrender.com/krishigpt",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: inputText,
+            language: selectedLanguage,
+          }),
+        }
+      );
 
       const data = await res.json();
       const responseText = data.response || "No response from assistant.";
