@@ -1,3 +1,5 @@
+"use client"; // ✅ If using Next.js with App Router
+
 import React, { useState, useRef, useEffect } from "react";
 import { Mic, Send, X, Square } from "lucide-react";
 import SpeechRecognition, {
@@ -49,14 +51,16 @@ const KrishiGPT = () => {
   };
 
   const speakResponse = (text) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang =
-      selectedLanguage === "mr"
-        ? "mr-IN"
-        : selectedLanguage === "hi"
-        ? "hi-IN"
-        : "en-US";
-    window.speechSynthesis.speak(utterance);
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang =
+        selectedLanguage === "mr"
+          ? "mr-IN"
+          : selectedLanguage === "hi"
+          ? "hi-IN"
+          : "en-US";
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   const sendMessage = async (inputText = message) => {
@@ -99,7 +103,7 @@ const KrishiGPT = () => {
       sendMessage(transcript.trim());
       resetTranscript();
     }
-  }, [isListening]);
+  }, [isListening, transcript, resetTranscript]);
 
   useEffect(() => {
     chatBoxRef.current?.scrollTo({
